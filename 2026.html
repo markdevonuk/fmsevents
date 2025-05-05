@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Festival Medical Volunteer System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .card-header {
+            font-weight: 600;
+        }
+        .event-card {
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .volunteered-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+        }
+        .login-container {
+            max-width: 500px;
+            margin: 3rem auto;
+        }
+        .navbar-brand img {
+            height: 40px;
+            margin-right: 10px;
+        }
+        .footer {
+            margin-top: 2rem;
+            padding: 1rem 0;
+            background-color: #f8f9fa;
+        }
+        #loading-spinner {
+            display: none;
+            text-align: center;
+            margin: 2rem;
+        }
+        /* Admin section styles */
+        .stats-table th, .stats-table td {
+            text-align: center;
+        }
+        .admin-buttons {
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <span>Festival Medical Volunteer System</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item" id="login-nav-item">
+                        <a class="nav-link" href="#" id="login-link">Login</a>
+                    </li>
+                    <li class="nav-item d-none" id="profile-nav-item">
+                        <a class="nav-link" href="#" id="profile-link">My Profile</a>
+                    </li>
+                    <li class="nav-item d-none" id="admin-nav-item">
+                        <a class="nav-link" href="#" id="admin-link">Admin</a>
+                    </li>
+                    <li class="nav-item d-none" id="logout-nav-item">
+                        <a class="nav-link" href="#" id="logout-link">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Loading Spinner -->
+    <div id="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading data, please wait...</p>
+    </div>
+
+    <!-- Login Form -->
+    <div id="login-section" class="container login-container">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4>Login to Festival Medical</h4>
+            </div>
+            <div class="card-body">
+                <form id="login-form">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email address</label>
+                        <input type="email" class="form-control" id="email" required>
+                        <div class="form-text">Must be a valid @festival-medical.org email address</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="firstName" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="firstName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lastName" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="lastName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="grade" class="form-label">Clinical Grade</label>
+                        <select class="form-select" id="grade" required>
+                            <option value="" selected disabled>Select your clinical grade</option>
+                            <option value="Doctor">Doctor</option>
+                            <option value="Nurse">Nurse</option>
+                            <option value="Paramedic">Paramedic</option>
+                            <option value="EMT">EMT</option>
+                            <option value="First Aider">First Aider</option>
+                            <!-- Add more options as needed -->
+                        </select>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="rememberMe">
+                        <label class="form-check-label" for="rememberMe">Remember me on this device</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content: Events List -->
+    <div id="events-section" class="container d-none">
+        <h2 class="mt-4 mb-3">Upcoming Events</h2>
+        
+        <!-- Your Volunteer Commitments -->
+        <div class="mb-4">
+            <h3>Your Volunteer Commitments</h3>
+            <div id="volunteered-events" class="row">
+                <!-- Events will be populated dynamically -->
+            </div>
+            <div id="no-volunteered-message" class="alert alert-info">
+                You haven't volunteered for any events yet.
+            </div>
+        </div>
+        
+        <!-- Available Events -->
+        <div>
+            <h3>Available Events</h3>
+            <div id="available-events" class="row">
+                <!-- Events will be populated dynamically -->
+            </div>
+            <div id="no-available-message" class="alert alert-info d-none">
+                There are no more available events at this time.
+            </div>
+        </div>
+    </div>
+    
+    <!-- Admin Section -->
+    <div id="admin-section" class="container d-none">
+        <h2 class="mt-4 mb-3">Admin Dashboard</h2>
+        
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-info-circle"></i> From here, you can view volunteer statistics and export volunteer lists.
+        </div>
+        
+        <h3>Event Volunteer Statistics</h3>
+        <div id="volunteer-stats-container">
+            <table class="table table-striped stats-table">
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Doctor</th>
+                        <th>Nurse</th>
+                        <th>Paramedic</th>
+                        <th>EMT</th>
+                        <th>First Aider</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="stats-table-body">
+                    <!-- Will be populated dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal for volunteer confirmation -->
+    <div class="modal fade" id="volunteerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Volunteering</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to volunteer for <span id="modal-event-name"></span>?</p>
+                    <p>Your details will be shared with the event organizers.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirm-volunteer-btn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for cancellation confirmation -->
+    <div class="modal fade" id="cancellationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Cancellation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to cancel your volunteering for <span id="modal-cancel-event-name"></span>?</p>
+                    <p class="text-danger">Note: You can only cancel up to 4 weeks before the event.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Volunteering</button>
+                    <button type="button" class="btn btn-danger" id="confirm-cancel-btn">Confirm Cancellation</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer mt-auto py-3">
+        <div class="container text-center">
+            <span class="text-muted">© 2026 Festival Medical Services. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Global variables
+        let currentUser = null;
+        let allEvents = [];
+        let volunteeredEventNames = [];
+        
+        // On page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for saved login
+            const savedUser = localStorage.getItem('festivalMedicalUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                loadEvents();
+            }
+
+            // Form submission
+            document.getElementById('login-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                
+                // Call server-side function to validate email
+                google.script.run
+                    .withSuccessHandler(function(isValid) {
+                        if (!isValid) {
+                            alert('Please enter a valid @festival-medical.org email address');
+                            return;
+                        }
+                        
+                        // If valid, create user object
+                        currentUser = {
+                            email: email,
+                            firstName: document.getElementById('firstName').value,
+                            lastName: document.getElementById('lastName').value,
+                            grade: document.getElementById('grade').value
+                        };
+
+                        // Remember user if checkbox is checked
+                        if (document.getElementById('rememberMe').checked) {
+                            localStorage.setItem('festivalMedicalUser', JSON.stringify(currentUser));
+                        }
+
+                        // Load events
+                        loadEvents();
+                    })
+                    .isValidEmail(email);
+            });
+
+            // Handle logout
+            document.getElementById('logout-link').addEventListener('click', function(e) {
+                e.preventDefault();
+                localStorage.removeItem('festivalMedicalUser');
+                currentUser = null;
+                volunteeredEventNames = [];
+                showLoginForm();
+            });
+            
+            // Handle admin link
+            document.getElementById('admin-link').addEventListener('click', function(e) {
+                e.preventDefault();
+                showAdminSection();
+            });
+            
+            // Handle profile link (back to events)
+            document.getElementById('profile-link').addEventListener('click', function(e) {
+                e.preventDefault();
+                showEventsSection();
+            });
+
+            // Volunteer button click delegate
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.classList.contains('volunteer-btn') || 
+                   (e.target.parentElement && e.target.parentElement.classList.contains('volunteer-btn'))) {
+                    const button = e.target.classList.contains('volunteer-btn') ? e.target : e.target.parentElement;
+                    const eventId = button.dataset.eventId;
+                    const event = allEvents.find(e => e.id == eventId);
+                    
+                    // Show confirmation modal
+                    document.getElementById('modal-event-name').textContent = event.name;
+                    document.getElementById('confirm-volunteer-btn').dataset.eventId = eventId;
+                    
+                    const volunteerModal = new bootstrap.Modal(document.getElementById('volunteerModal'));
+                    volunteerModal.show();
+                }
+            });
+
+            // Confirm volunteer button
+            document.getElementById('confirm-volunteer-btn').addEventListener('click', function() {
+                const eventId = this.dataset.eventId;
+                const event = allEvents.find(e => e.id == eventId);
+                
+                showLoadingSpinner();
+                
+                // Call server-side function to add volunteer
+                google.script.run
+                    .withSuccessHandler(function(result) {
+                        hideLoadingSpinner();
+                        
+                        if (result.success) {
+                            // Close modal
+                            bootstrap.Modal.getInstance(document.getElementById('volunteerModal')).hide();
+                            
+                            // Refresh events
+                            loadEvents();
+                        } else {
+                            alert(result.message || 'Failed to volunteer. Please try again.');
+                        }
+                    })
+                    .withFailureHandler(function(error) {
+                        hideLoadingSpinner();
+                        alert('Error: ' + error.message);
+                    })
+                    .addVolunteer(
+                        event.name, 
+                        currentUser.firstName,
+                        currentUser.lastName,
+                        currentUser.grade,
+                        currentUser.email
+                    );
+            });
+
+            // Cancel button click delegate
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.classList.contains('cancel-btn') || 
+                   (e.target.parentElement && e.target.parentElement.classList.contains('cancel-btn'))) {
+                    const button = e.target.classList.contains('cancel-btn') ? e.target : e.target.parentElement;
+                    const eventId = button.dataset.eventId;
+                    const event = allEvents.find(e => e.id == eventId);
+                    
+                    // Show cancellation modal
+                    document.getElementById('modal-cancel-event-name').textContent = event.name;
+                    document.getElementById('confirm-cancel-btn').dataset.eventId = eventId;
+                    
+                    const cancellationModal = new bootstrap.Modal(document.getElementById('cancellationModal'));
+                    cancellationModal.show();
+                }
+            });
+
+            // Confirm cancellation button
+            document.getElementById('confirm-cancel-btn').addEventListener('click', function() {
+                const eventId = this.dataset.eventId;
+                const event = allEvents.find(e => e.id == eventId);
+                
+                showLoadingSpinner();
+                
+                // Call server-side function to check if cancellation is allowed
+                google.script.run
+                    .withSuccessHandler(function(canCancel) {
+                        if (!canCancel) {
+                            hideLoadingSpinner();
+                            alert('Sorry, you cannot cancel within 4 weeks of the event.');
+                            bootstrap.Modal.getInstance(document.getElementById('cancellationModal')).hide();
+                            return;
+                        }
+                        
+                        // If allowed, proceed with cancellation
+                        google.script.run
+                            .withSuccessHandler(function(result) {
+                                hideLoadingSpinner();
+                                
+                                if (result.success) {
+                                    // Close modal
+                                    bootstrap.Modal.getInstance(document.getElementById('cancellationModal')).hide();
+                                    
+                                    // Refresh events
+                                    loadEvents();
+                                } else {
+                                    alert(result.message || 'Failed to cancel. Please try again.');
+                                }
+                            })
+                            .withFailureHandler(function(error) {
+                                hideLoadingSpinner();
+                                alert('Error: ' + error.message);
+                            })
+                            .removeVolunteer(event.name, currentUser.email);
+                    })
+                    .withFailureHandler(function(error) {
+                        hideLoadingSpinner();
+                        alert('Error: ' + error.message);
+                    })
+                    .canCancelVolunteering(event.name);
+            });
+            
+            // Export CSV button delegate
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.classList.contains('export-csv-btn')) {
+                    const eventName = e.target.dataset.event;
+                    
+                    showLoadingSpinner();
+                    
+                    // Call server-side function to get CSV
+                    google.script.run
+                        .withSuccessHandler(function(csv) {
+                            hideLoadingSpinner();
+                            
+                            // Create download link
+                            const blob = new Blob([csv], { type: 'text/csv' });
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.setAttribute('hidden', '');
+                            a.setAttribute('href', url);
+                            a.setAttribute('download', eventName.replace(/\s+/g, '_') + '_volunteers.csv');
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                        })
+                        .withFailureHandler(function(error) {
+                            hideLoadingSpinner();
+                            alert('Error: ' + error.message);
+                        })
+                        .getEventVolunteersAsCsv(eventName);
+                }
+            });
+        });
+
+        // Load events from the server
+        function loadEvents() {
+            showLoadingSpinner();
+            
+            // Get all events
+            google.script.run
+                .withSuccessHandler(function(events) {
+                    allEvents = events;
+                    
+                    // Get user's volunteered events
+                    google.script.run
+                        .withSuccessHandler(function(eventNames) {
+                            volunteeredEventNames = eventNames;
+                            
+                            // Check if user is an admin (you can implement your own logic)
+                            const isAdmin = currentUser.email.toLowerCase() === 'admin@festival-medical.org';
+                            
+                            // Show admin nav item if admin
+                            document.getElementById('admin-nav-item').classList.toggle('d-none', !isAdmin);
+                            
+                            // Render the events
+                            renderEvents();
+                            
+                            // Show events section
+                            showEventsSection();
+                            
+                            hideLoadingSpinner();
+                        })
+                        .withFailureHandler(function(error) {
+                            hideLoadingSpinner();
+                            alert('Error loading volunteer data: ' + error.message);
+                        })
+                        .getUserVolunteeredEvents(currentUser.email);
+                })
+                .withFailureHandler(function(error) {
+                    hideLoadingSpinner();
+                    alert('Error loading events: ' + error.message);
+                })
+                .getAllEvents();
+        }
+
+        // Show events section
+        function showEventsSection() {
+            document.getElementById('login-section').classList.add('d-none');
+            document.getElementById('events-section').classList.remove('d-none');
+            document.getElementById('admin-section').classList.add('d-none');
+            
+            document.getElementById('login-nav-item').classList.add('d-none');
+            document.getElementById('profile-nav-item').classList.remove('d-none');
+            document.getElementById('logout-nav-item').classList.remove('d-none');
+        }
+
+        // Show login form
+        function showLoginForm() {
+            document.getElementById('login-section').classList.remove('d-none');
+            document.getElementById('events-section').classList.add('d-none');
+            document.getElementById('admin-section').classList.add('d-none');
+            
+            document.getElementById('login-nav-item').classList.remove('d-none');
+            document.getElementById('profile-nav-item').classList.add('d-none');
+            document.getElementById('logout-nav-item').classList.add('d-none');
+            document.getElementById('admin-nav-item').classList.add('d-none');
+        }
+        
+        // Show admin section
+        function showAdminSection() {
+            document.getElementById('login-section').classList.add('d-none');
+            document.getElementById('events-section').classList.add('d-none');
+            document.getElementById('admin-section').classList.remove('d-none');
+            
+            // Load admin data
+            loadAdminData();
+        }
+        
+        // Load data for admin dashboard
+        function loadAdminData() {
+            showLoadingSpinner();
+            
+            google.script.run
+                .withSuccessHandler(function(stats) {
+                    hideLoadingSpinner();
+                    renderAdminStats(stats);
+                })
+                .withFailureHandler(function(error) {
+                    hideLoadingSpinner();
+                    alert('Error loading admin data: ' + error.message);
+                })
+                .getEventVolunteerStats();
+        }
+        
+        // Render admin statistics
+        function renderAdminStats(stats) {
+            const tableBody = document.getElementById('stats-table-body');
+            tableBody.innerHTML = '';
+            
+            const grades = ['Doctor', 'Nurse', 'Paramedic', 'EMT', 'First Aider'];
+            
+            for (const eventName in stats) {
+                const row = document.createElement('tr');
+                
+                // Event name cell
+                const nameCell = document.createElement('td');
+                nameCell.textContent = eventName;
+                row.appendChild(nameCell);
+                
+                // Grade count cells
+                let total = 0;
+                grades.forEach(grade => {
+                    const count = stats[eventName][grade] || 0;
+                    total += count;
+                    
+                    const cell = document.createElement('td');
+                    cell.textContent = count;
+                    row.appendChild(cell);
+                });
+                
+                // Total cell
+                const totalCell = document.createElement('td');
+                totalCell.textContent = total;
+                totalCell.style.fontWeight = 'bold';
+                row.appendChild(totalCell);
+                
+                // Actions cell
+                const actionsCell = document.createElement('td');
+                const exportBtn = document.createElement('button');
+                exportBtn.className = 'btn btn-sm btn-primary export-csv-btn';
+                exportBtn.dataset.event = eventName;
+                exportBtn.innerHTML = '<i class="fas fa-download"></i> Export CSV';
+                actionsCell.appendChild(exportBtn);
+                row.appendChild(actionsCell);
+                
+                tableBody.appendChild(row);
+            }
+        }
+
+        // Render events lists
+        function renderEvents() {
+            // Clear existing lists
+            const volunteeredContainer = document.getElementById('volunteered-events');
+            const availableContainer = document.getElementById('available-events');
+            volunteeredContainer.innerHTML = '';
+            availableContainer.innerHTML = '';
+            
+            let hasVolunteered = false;
+            let hasAvailable = false;
+            
+            // Populate each list
+            allEvents.forEach(event => {
+                const isVolunteered = volunteeredEventNames.includes(event.name);
+                
+                if (isVolunteered) {
+                    hasVolunteered = true;
+                    volunteeredContainer.appendChild(createEventCard(event, true));
+                } else {
+                    hasAvailable = true;
+                    availableContainer.appendChild(createEventCard(event, false));
+                }
+            });
+            
+            // Show/hide "no events" messages
+            document.getElementById('no-volunteered-message').classList.toggle('d-none', hasVolunteered);
+            document.getElementById('no-available-message').classList.toggle('d-none', hasAvailable);
+        }
+
+        // Create event card
+        function createEventCard(event, isVolunteered) {
+            const dateText = event.startDate === event.endDate 
+                ? event.startDate 
+                : `${event.startDate} - ${event.endDate}`;
+                
+            const card = document.createElement('div');
+            card.className = 'col-md-6 col-lg-4';
+            
+            // Create HTML for the card
+            card.innerHTML = `
+                <div class="card event-card">
+                    <div class="card-header">
+                        <a href="${event.url}" target="_blank">${event.name}</a>
+                    </div>
+                    <div class="card-body">
+                        ${isVolunteered ? `
+                            <span class="volunteered-badge badge bg-success">
+                                <i class="fas fa-check-circle"></i> Volunteered
+                            </span>
+                        ` : ''}
+                        <p><i class="fas fa-map-marker-alt"></i> ${event.location}</p>
+                        <p><i class="fas fa-calendar-alt"></i> ${dateText}</p>
+                        <div class="d-grid">
+                            ${isVolunteered ? `
+                                <button class="btn btn-danger cancel-btn" data-event-id="${event.id}">
+                                    <i class="fas fa-times-circle"></i> Cancel (Before ${event.cancellationDeadline})
+                                </button>
+                            ` : `
+                                <button class="btn btn-primary volunteer-btn" data-event-id="${event.id}">
+                                    <i class="fas fa-hand-paper"></i> Volunteer
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Show loading spinner
+        function showLoadingSpinner() {
+            document.getElementById('loading-spinner').style.display = 'block';
+        }
+        
+        // Hide loading spinner
+        function hideLoadingSpinner() {
+            document.getElementById('loading-spinner').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
